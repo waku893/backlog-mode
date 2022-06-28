@@ -250,12 +250,12 @@
 
 (defun backlog-list-summary-next ()
   (interactive)
-  (setq offset (+ offset 20))
+  (setq offset (+ offset disp-count))
   (backlog-list-summary))
 
 (defun backlog-list-summary-pre ()
   (interactive)
-  (setq offset (- offset 20))
+  (setq offset (- offset disp-count))
   (backlog-list-summary))
 
 
