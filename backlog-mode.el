@@ -4,8 +4,6 @@
 
 ;; Author: Hiroyuki Kubota <kubo.web@gmail.com>
 ;; URL: https://github.com/purcell/emacs-hcl-mode
-;; Package-Version: 20220628.2228
-;; Package-Commit: 
 ;; Version: 0.01
 ;; Package-Requires: ((emacs "26.3"))
 
