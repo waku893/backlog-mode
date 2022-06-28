@@ -41,7 +41,10 @@
   (define-key local-map "\M-ss" 'backlog-set-status-ids)
   (define-key local-map "\M-sk" 'backlog-set-keyword)
   (define-key local-map "\M-sc" 'backlog-set-count)
+  (define-key local-map "\M-sf" 'backlog-set-createdsince)
+  (define-key local-map "\M-st" 'backlog-set-createduntil)
   (define-key local-map "v" 'backlog-issue-comment)
+  (define-key local-map "a" 'backlog-assignee-filter)
   (use-local-map local-map)
   (run-hooks 'backlog-mode-hook))
 
@@ -52,6 +55,9 @@
 (defvar status-ids '(1 2 3))
 (defvar keyword "")
 (defvar disp-count 100)
+(defvar assignee-ids nil)
+(defvar created-since "")
+(defvar created-until "")
 
 (defun get-project-id (project-key)
    (let ((res (request (concatenate 'string backlog-url "api/v2/projects/" project-key)
@@ -123,7 +129,7 @@
 	  (key-value 'name (key-value 'issueType issue))
 	  (key-value 'name (key-value 'assignee issue))
 	  (key-value 'name (key-value 'status issue))
-	  (key-value 'updated issue)
+	  (utctime-to-jsttime (key-value 'updated issue))
 	  (key-value 'issueKey issue)
 	  (key-value 'summary issue)))
 
@@ -141,6 +147,16 @@
   (interactive "scount:")
   (setq disp-count cnt)
   (message disp-count))
+
+(defun backlog-set-createdsince (date)
+  (interactive "sdate(YYYY-mm-dd):")
+  (setq created-since date)
+  (message created-since))
+
+(defun backlog-set-createduntil (date)
+  (interactive "sdate(YYYY-mm-dd):")
+  (setq created-until date)
+  (message created-until))
 
 (defun backlog-set-status-ids (ids)
   (interactive "sStatus IDs 1:未対応 2:処理中 3:処理済み 4:完了 ex. 1 2 3 :")
@@ -211,6 +227,17 @@
 	(setq i (1+ i))
 	))))
 
+(defun get-assignee-id (issue-id)
+  (key-value 'id
+	     (key-value 'assignee
+			(aref (request-response-data
+			       (request (concatenate 'string backlog-url "api/v2/issues")
+				 :params `(("apiKey" . ,backlog-api-key)
+					   ("id[]" . ,issue-id))
+				 :parser 'json-read
+				 :sync t))
+			      0))))
+
 (defun backlog-issue-comment ()
   (interactive)
     (let* ((id (backlog-get-point-id))
@@ -233,10 +260,14 @@
 (defun backlog-list-summary ()
   (switch-to-buffer "*backlog*")
   (erase-buffer)
-  (message "backlog-projectkey:%s status-ids:%s keyword:%s count:%s offset:%s" backlog-project-key status-ids keyword disp-count offset)
+  (message "backlog-projectkey:%s status-ids:%s assignee-id:%s keyword:%s created-since:%s created-until:%s count:%s offset:%s"
+	   backlog-project-key status-ids assignee-ids keyword created-since created-until disp-count offset)
   (let ((i 0)
 	(issues (get-issues :project-ids (list (get-project-id backlog-project-key))
 			    :status-ids status-ids
+			    :assignee-ids assignee-ids
+			    :created-since created-since
+			    :created-until created-until
 			    :offset offset
 			    :keyword keyword)))
     (while (> (length issues) i)
@@ -247,6 +278,7 @@
 (defun backlog-list-summary-home ()
   (interactive)
   (setq offset 0)
+  (setq assignee-ids nil)
   (backlog-list-summary))
 
 (defun backlog-list-summary-next ()
@@ -259,6 +291,10 @@
   (setq offset (- offset disp-count))
   (backlog-list-summary))
 
+(defun backlog-assignee-filter ()
+  (interactive)
+  (setq assignee-ids (list (get-assignee-id (backlog-get-point-id))))
+  (backlog-list-summary))
 
 
 (provide 'backlog-mode)
