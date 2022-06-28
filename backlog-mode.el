@@ -241,7 +241,8 @@
 			    :keyword keyword)))
     (while (> (length issues) i)
       (insert (display-issue-summary (aref issues i)))
-      (setq i (1+ i)))))
+      (setq i (1+ i))))
+  (goto-char 0))
 
 (defun backlog-list-summary-home ()
   (interactive)
